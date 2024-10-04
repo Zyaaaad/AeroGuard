@@ -42,6 +42,7 @@ void initDrone(int nb_drones,float xmin,float xmax ,float ymin,float ymax, float
     d->status = ACTIF;
 }
 */
+
  // Fonction pour initialiser un drone
 Drone creer_drone(int id, float x, float y, float z, float V, Status status)
 {
