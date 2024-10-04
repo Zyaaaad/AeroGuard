@@ -49,5 +49,5 @@ void afficherStatut(Drone *d)
 void changerStatus(Drone *d, Status nouveauStatus)
 {
     d->status = nouveauStatus;
-    afficherStatut(&d);
+    afficherStatut(d);
 }
