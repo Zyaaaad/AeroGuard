@@ -37,7 +37,7 @@ int main()
     // Affichage après déplacement
     afficherPosition(&drone1);
     // Désactivation du drone
-    /*changerStatus(&drone1, INACTIF);
+    changerStatus(&drone1, INACTIF);
     printf("\nDrone désactivé.\n");
 
     // Tentative de déplacement avec drone inactif
