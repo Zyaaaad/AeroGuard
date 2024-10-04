@@ -1,18 +1,19 @@
-typedef struct 
+typedef struct
 {
-    float x,y,z;
+    float x, y, z;
 } Position;
 
-typedef enum {
-    INACTIF = 0,  
-    ACTIF = 1     
+typedef enum
+{
+    INACTIF = 0,
+    ACTIF = 1
 } Status;
 
-typedef struct 
+typedef struct
 {
     int id;
     Position pos;
     float v;
     Status status;
 
-}Drone;
+} Drone;
