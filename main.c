@@ -14,15 +14,15 @@ int main()
 {
 
     // Charger une image PNG avec stb_image
-    /* int largeur, hauteur, comp;
-    unsigned char *image = stbi_load("carte_ecole.png", &largeur, &hauteur, &comp, 0);
+    int largeur, hauteur, comp;
+    unsigned char *image = stbi_load("../Cartes/CarteParis.png", &largeur, &hauteur, &comp, 0);
     if (!image)
     {
         printf("Erreur : Impossible de charger l'image.\n");
         return -1;
     }
     printf("Image chargée avec succès: Largeur = %d, Hauteur = %d, Composants = %d\n", largeur, hauteur, comp);
-     *///_______________________________________________________________________________________________________________________
+    //_______________________________________________________________________________________________________________________
 
     // Création d'un drone et initialisation de sa position, vitesse et statut
     Drone drone1;
