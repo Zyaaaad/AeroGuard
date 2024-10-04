@@ -37,19 +37,19 @@ int main()
     // Affichage après déplacement
     afficherPosition(&drone1);
     // Désactivation du drone
-    changerStatus(&drone1, INACTIF);
+    /*changerStatus(&drone1, INACTIF);
     printf("\nDrone désactivé.\n");
 
     // Tentative de déplacement avec drone inactif
     deplacerDrone(&drone1, 0.5, -0.5, 1.0); // Déplacement en (0.5, -0.5, 1)
 
     // Chemin vers l'image PNG que tu veux afficher
-    const char *chemin_image = "carte_ecole.png"; // Remplace par le chemin complet si nécessaire
+    //const char *chemin_image = "carte_ecole.png"; // Remplace par le chemin complet si nécessaire
 
     // Utiliser la commande 'start' pour ouvrir l'image avec l'application par défaut
-    char commande[256];
-    snprintf(commande, sizeof(commande), "start %s", chemin_image);
-    system(commande);
+    //char commande[256];
+    //snprintf(commande, sizeof(commande), "start %s", chemin_image);
+    //system(commande);*/
 
     return 0;
 }
