@@ -1,5 +1,26 @@
 #include <stdio.h>
 #include "mes_structures.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
+
+unsigned char* load_image(const char* chemin, int* largeur, int* hauteur, int* comp){
+    // Charge l'image en utilisant stb_image
+    unsigned char* image = stbi_load(chemin, largeur, hauteur, comp, 0);
+    
+    // Vérifie si le chargement a échoué
+    if (!image) {
+        printf("Erreur : Impossible de charger l'image à l'emplacement '%s'.\n", chemin);
+        return NULL;  // Retourne NULL en cas d'erreur
+    }
+    
+    // Affiche les dimensions de l'image chargée
+    printf("Image chargée avec succès: Largeur = %d, Hauteur = %d\n", *largeur, *hauteur);
+    
+    return image;  // Retourne le pointeur vers l'image chargée
+}
 
 // Fonction pour initialiser un drone
 void initDrone(Drone *d, int id, float x, float y, float z, float V, Status status)
