@@ -33,10 +33,15 @@ void deplacerDrone(Drone *d, float dx, float dy, float dz)
     }
 }
 
-// Fonction pour afficher la position actuelle et le statut du drone
+// Fonction pour afficher la position actuelle du drone
 void afficherPosition(Drone *d)
 {
     printf("Position actuelle du drone: (%.2f, %.2f, %.2f)\n", d->pos.x, d->pos.y, d->pos.z);
+}
+
+// Fonction pour afficher le statut actuelle du drone
+void afficherStatut(Drone *d)
+{
     printf("Statut du drone: %s\n", (d->status == ACTIF) ? "Actif" : "Inactif");
 }
 
@@ -44,4 +49,5 @@ void afficherPosition(Drone *d)
 void changerStatus(Drone *d, Status nouveauStatus)
 {
     d->status = nouveauStatus;
+    afficherStatut(&d);
 }
