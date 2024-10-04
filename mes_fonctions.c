@@ -5,15 +5,23 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#define MAX_DRONES 10
 
+
+// Tableau des drones (simulant les drones en vol)
+Drone drones[MAX_DRONES];
+int nb_drones = 0; 
+
+
+// Charger l'image en utilisant stb_image
 unsigned char* load_image(const char* chemin, int* largeur, int* hauteur, int* comp){
-    // Charge l'image en utilisant stb_image
+    // Le 0 pour charger l'image dans son format d'origine, sans conversion.
     unsigned char* image = stbi_load(chemin, largeur, hauteur, comp, 0);
     
     // Vérifie si le chargement a échoué
     if (!image) {
         printf("Erreur : Impossible de charger l'image à l'emplacement '%s'.\n", chemin);
-        return NULL;  // Retourne NULL en cas d'erreur
+        return NULL;
     }
     
     // Affiche les dimensions de l'image chargée
@@ -22,9 +30,22 @@ unsigned char* load_image(const char* chemin, int* largeur, int* hauteur, int* c
     return image;  // Retourne le pointeur vers l'image chargée
 }
 
-// Fonction pour initialiser un drone
-void initDrone(Drone *d, int id, float x, float y, float z, float V, Status status)
+
+/*// Fonction pour initialiser un drone
+void initDrone(int nb_drones,float xmin,float xmax ,float ymin,float ymax, float zmax)
 {
+    Drone *d;
+    d->pos.x = x;
+    d->pos.y = y;
+    d->pos.z = z;
+    d->v = V;
+    d->status = ACTIF;
+}
+*/
+ // Fonction pour initialiser un drone
+Drone creer_drone(int id, float x, float y, float z, float V, Status status)
+{
+    Drone *d;
     d->id = id;
     printf("Drone %d encours de creation\n", d->id);
     d->pos.x = x;
@@ -36,7 +57,9 @@ void initDrone(Drone *d, int id, float x, float y, float z, float V, Status stat
     {
         printf("Le drone %d est actif\n", d->id);
     }
+    return *d;
 }
+
 
 // Fonction pour déplacer le drone si le statut est ACTIF
 void deplacerDrone(Drone *d, float dx, float dy, float dz)
