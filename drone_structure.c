@@ -17,6 +17,7 @@ typedef enum {
 
 typedef struct 
 {
+    int id;
     Position pos;
     float v;
     Status status;
@@ -25,14 +26,18 @@ typedef struct
 
 //________________________________________________________________________________________________________________________________
 
-
 // Fonction pour initialiser un drone
-void initDrone(Drone* d, float x, float y, float z, float V, Status status) {
+void initDrone(Drone* d,int id, float x, float y, float z, float V, Status status) {
+    d->id = id;
+    printf("Drone %d encours de creation\n",d->id);
     d->pos.x = x;
     d->pos.y = y;
     d->pos.z = z;
     d->v = V;
     d->status = status;
+    if(d->status == 1 ){
+        printf("Le drone %d est actif\n",d->id);
+    }
 }
 
 // Fonction pour déplacer le drone si le statut est ACTIF
@@ -75,7 +80,7 @@ int main() {
 
    // Création d'un drone et initialisation de sa position, vitesse et statut
     Drone drone1;
-    initDrone(&drone1, 0.0, 0.0, 0.0, 1.0, ACTIF); // Drone initialisé comme actif
+    initDrone(&drone1, 1 , 0.0, 0.0, 0.0, 1.0, 1); // Drone initialisé comme actif
 
     // Affichage de la position initiale et du statut
     afficherPosition(&drone1);
