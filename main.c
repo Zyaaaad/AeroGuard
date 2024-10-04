@@ -12,10 +12,9 @@
 
 int main()
 {
-
     // Charger une image PNG avec stb_image
     int largeur, hauteur, comp;
-    unsigned char *image = stbi_load("../Cartes/CarteParis.png", &largeur, &hauteur, &comp, 0);
+    unsigned char *image = stbi_load("./Cartes/CarteParis.png", &largeur, &hauteur, &comp, 0);
     if (!image)
     {
         printf("Erreur : Impossible de charger l'image.\n");
