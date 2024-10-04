@@ -1,44 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+
+#include"mes_fonctions.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-typedef struct 
-{
-    float x,y,z;
-} Position;
-
-typedef enum {
-    INACTIF = 0,  
-    ACTIF = 1     
-} Status;
-
-typedef struct 
-{
-    int id;
-    Position pos;
-    float v;
-    Status status;
-
-}Drone;
 
 //________________________________________________________________________________________________________________________________
 
-// Fonction pour initialiser un drone
-void initDrone(Drone* d,int id, float x, float y, float z, float V, Status status) {
-    d->id = id;
-    printf("Drone %d encours de creation\n",d->id);
-    d->pos.x = x;
-    d->pos.y = y;
-    d->pos.z = z;
-    d->v = V;
-    d->status = status;
-    if(d->status == 1 ){
-        printf("Le drone %d est actif\n",d->id);
-    }
-}
 
 // Fonction pour déplacer le drone si le statut est ACTIF
 void deplacerDrone(Drone* d, float dx, float dy, float dz) {
