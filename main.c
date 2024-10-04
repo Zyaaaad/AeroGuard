@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "mes_fonctions.h"
+#include "mes_signatures.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -26,7 +26,7 @@ int main()
 
     // Création d'un drone et initialisation de sa position, vitesse et statut
     Drone drone1;
-    initDrone(&drone1, 1, 0.0, 0.0, 0.0, 1.0, 1); // Drone initialisé comme actif
+    initDrone(&drone1, 1, 0.0, 0.0, 0.0, 1.0, ACTIF); // Drone initialisé comme actif
 
     // Affichage de la position initiale et du statut
     afficherPosition(&drone1);
