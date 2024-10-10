@@ -1,47 +1,33 @@
+// main.c
+
 #include <stdio.h>
 #include <stdlib.h>
+#include "mes_structures.h"
 #include "mes_signatures.h"
 
-#define alpha 0.1
-
-//________________________________________________________________________________________________________________________________
+#define MAX_DRONES 100 // Limite maximale de drones
 
 int main()
 {
-    // Charger la carte
-    int largeur, hauteur, comp;
-    load_image("./Cartes/CarteParis.png", &largeur, &hauteur, &comp);
-    
-    // Création d'un drone et initialisation de sa position, vitesse et statut
-    Drone drone1;
-    // Drone initialisé comme actif
-    
-    drone1 = creer_drone(1, 0.0, 0.0, 0.0, 1.0, ACTIF); 
+    Drone drones[MAX_DRONES]; // Tableau pour les drones
+    int nombreDrones = 0;     // Compteur de drones initialisés
+    Carte carte;
 
-    // Affichage du statut
-    afficherStatut(&drone1);
-    // Affichage de la position initiale
-    afficherPosition(&drone1);
+    // Initialisation de la carte avec une largeur et hauteur (ex: 30x30)
+    initCarte(&carte, 30, 30);
 
-    // Tentative de déplacement du drone
-    deplacerDrone(&drone1, 1.0, 1.0, 0.5); // Déplacement en (1, 1, 0.5)
-    afficherPosition(&drone1);
+    printf("Lecture du scénario...\n");
+    lireScenario("scenario.txt", drones, &nombreDrones);
 
-    // Désactivation du drone
-    changerStatus(&drone1, INACTIF);
-    deplacerDrone(&drone1, 0.5, -0.5, 1.0); // Déplacement en (0.5, -0.5, 1)
-    
-    
-    
+    // Afficher la carte après l'exécution
+    afficherCarte(&carte);
 
-
-    // Chemin vers l'image PNG que tu veux afficher
-    //const char *chemin_image = "carte_ecole.png"; // Remplace par le chemin complet si nécessaire
-
-    // Utiliser la commande 'start' pour ouvrir l'image avec l'application par défaut
-    //char commande[256];
-    //snprintf(commande, sizeof(commande), "start %s", chemin_image);
-    //system(commande);*/
+    // Libérer la mémoire allouée pour la carte
+    for (int i = 0; i < carte.hauteur; i++)
+    {
+        free(carte.carte[i]);
+    }
+    free(carte.carte);
 
     return 0;
 }

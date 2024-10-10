@@ -1,98 +1,156 @@
+// mes_fonctions.c
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "mes_structures.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include "mes_signatures.h"
 
-#define MAX_DRONES 10
-
-
-// Tableau des drones (simulant les drones en vol)
-Drone drones[MAX_DRONES];
-int nb_drones = 0; 
-
-
-// Charger l'image en utilisant stb_image
-unsigned char* load_image(const char* chemin, int* largeur, int* hauteur, int* comp){
-    // Le 0 pour charger l'image dans son format d'origine, sans conversion.
-    unsigned char* image = stbi_load(chemin, largeur, hauteur, comp, 0);
-    
-    // Vérifie si le chargement a échoué
-    if (!image) {
-        printf("Erreur : Impossible de charger l'image à l'emplacement '%s'.\n", chemin);
-        return NULL;
-    }
-    
-    // Affiche les dimensions de l'image chargée
-    printf("Image chargée avec succès: Largeur = %d, Hauteur = %d\n", *largeur, *hauteur);
-    
-    return image;  // Retourne le pointeur vers l'image chargée
-}
-
-
-/*// Fonction pour initialiser un drone
-void initDrone(int nb_drones,float xmin,float xmax ,float ymin,float ymax, float zmax)
+void initDrone(Drone *d, int id, float x, float y, float z, float vitesse)
 {
-    Drone *d;
-    d->pos.x = x;
-    d->pos.y = y;
-    d->pos.z = z;
-    d->v = V;
-    d->status = ACTIF;
-}
-*/
-
- // Fonction pour initialiser un drone
-Drone creer_drone(int id, float x, float y, float z, float V, Status status)
-{
-    Drone *d;
     d->id = id;
-    printf("Drone %d encours de creation\n", d->id);
     d->pos.x = x;
     d->pos.y = y;
     d->pos.z = z;
-    d->v = V;
-    d->status = status;
-    if (d->status == 1)
-    {
-        printf("Le drone %d est actif\n", d->id);
-    }
-    return *d;
+    d->vitesse = vitesse;
+    d->etat.endommage = 0;
+    d->etat.enMission = 1;
+    d->etat.droneMalveillant = 0;
 }
 
+void initCarte(Carte *carte, int largeur, int hauteur)
+{
+    carte->largeur = largeur;
+    carte->hauteur = hauteur;
+    carte->carte = malloc(hauteur * sizeof(char *));
+    if (carte->carte == NULL)
+    {
+        printf("Erreur d'allocation mémoire pour la carte\n");
+        return;
+    }
+    for (int i = 0; i < hauteur; i++)
+    {
+        carte->carte[i] = malloc(largeur * sizeof(char));
+        if (carte->carte[i] == NULL)
+        {
+            printf("Erreur d'allocation mémoire pour la ligne %d de la carte\n", i);
+            return;
+        }
+        memset(carte->carte[i], '.', largeur); // Remplir avec '.'
+    }
+}
 
-// Fonction pour déplacer le drone si le statut est ACTIF
 void deplacerDrone(Drone *d, float dx, float dy, float dz)
 {
-    if (d->status == ACTIF)
+    d->pos.x += dx;
+    d->pos.y += dy;
+    d->pos.z += dz;
+    printf("Drone %d déplacé à (%.2f, %.2f, %.2f)\n", d->id, d->pos.x, d->pos.y, d->pos.z);
+}
+
+void photographier(Drone *d, Carte *carte)
+{
+    printf("Drone %d prend une photo à la position (%.2f, %.2f, %.2f)\n", d->id, d->pos.x, d->pos.y, d->pos.z);
+
+    int x = (int)d->pos.x;
+    int y = (int)d->pos.y;
+
+    if (x >= 0 && x < carte->largeur && y >= 0 && y < carte->hauteur)
     {
-        d->pos.x += dx * d->v;
-        d->pos.y += dy * d->v;
-        d->pos.z += dz * d->v;
-        printf("Drone déplacé à la nouvelle position.\n");
+        carte->carte[y][x] = 'P'; // Marquer la zone comme photographiée
     }
     else
     {
-        printf("Drone inactif, déplacement impossible.\n");
+        printf("Erreur : Drone %d essaie de photographier en dehors des limites de la carte\n", d->id);
     }
 }
 
-// Fonction pour afficher la position actuelle du drone
-void afficherPosition(Drone *d)
+void detecterDronesMalveillants(Drone *drones, int nombreDrones)
 {
-    printf("Position actuelle du drone: (%.2f, %.2f, %.2f)\n", d->pos.x, d->pos.y, d->pos.z);
+    for (int i = 0; i < nombreDrones; i++)
+    {
+        if (drones[i].etat.droneMalveillant)
+        {
+            printf("Drone malveillant détecté: ID %d\n", drones[i].id);
+        }
+    }
 }
 
-// Fonction pour afficher le statut actuelle du drone
-void afficherStatut(Drone *d)
+void analyserZone(Drone *drones, int nombreDrones, Carte *carte)
 {
-    printf("Statut du drone: %s\n", (d->status == ACTIF) ? "Actif" : "Inactif");
+    // Simuler une analyse de zone par les drones
+    for (int i = 0; i < nombreDrones; i++)
+    {
+        if (!drones[i].etat.endommage)
+        {
+            photographier(&drones[i], carte);
+        }
+    }
 }
 
-// Fonction pour changer le statut du drone
-void changerStatus(Drone *d, Status nouveauStatus)
+void lireScenario(char *fichierScenario, Drone *drones, int *nombreDrones)
 {
-    d->status = nouveauStatus;
-    afficherStatut(d);
+    FILE *fichier = fopen(fichierScenario, "r");
+    if (fichier == NULL)
+    {
+        printf("Erreur d'ouverture du fichier %s\n", fichierScenario);
+        return;
+    }
+
+    printf("Fichier %s ouvert avec succès\n", fichierScenario);
+
+    char ligne[256];
+    while (fgets(ligne, sizeof(ligne), fichier))
+    {
+        printf("Ligne lue : %s", ligne);
+
+        // Traitement des lignes
+        if (strncmp(ligne, "init", 4) == 0)
+        {
+            int id;
+            float x, y, z, vitesse;
+            sscanf(ligne, "init %d %f %f %f %f", &id, &x, &y, &z, &vitesse);
+            initDrone(&drones[*nombreDrones], id, x, y, z, vitesse);
+            (*nombreDrones)++;
+            printf("Drone %d initialisé à (%.2f, %.2f, %.2f) avec vitesse %.2f\n", id, x, y, z, vitesse);
+        }
+        else if (strncmp(ligne, "deplacer", 8) == 0)
+        {
+            int id;
+            float dx, dy, dz;
+            sscanf(ligne, "deplacer %d %f %f %f", &id, &dx, &dy, &dz);
+            deplacerDrone(&drones[id - 1], dx, dy, dz);
+        }
+        else if (strncmp(ligne, "capture", 7) == 0)
+        {
+            int id;
+            sscanf(ligne, "capture %d", &id);
+            photographier(&drones[id - 1], NULL); // Passer la carte si nécessaire
+        }
+        else if (strncmp(ligne, "endommage", 9) == 0)
+        {
+            int id;
+            sscanf(ligne, "endommage %d", &id);
+            drones[id - 1].etat.endommage = 1;
+            printf("Drone %d endommagé.\n", id);
+        }
+        else if (strncmp(ligne, "detecterMalveillant", 20) == 0)
+        {
+            detecterDronesMalveillants(drones, *nombreDrones);
+        }
+    }
+
+    fclose(fichier);
+}
+
+void afficherCarte(Carte *carte)
+{
+    for (int i = 0; i < carte->hauteur; i++)
+    {
+        for (int j = 0; j < carte->largeur; j++)
+        {
+            printf("%c ", carte->carte[i][j]);
+        }
+        printf("\n");
+    }
 }
