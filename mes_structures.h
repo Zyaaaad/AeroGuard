@@ -1,34 +1,29 @@
-// mes_structures.h
-
 #ifndef MES_STRUCTURES_H
 #define MES_STRUCTURES_H
 
+// Structure pour la position d'un drone
 typedef struct
 {
-    float x, y, z; // Position dans l'espace
+    float x, y, z;
 } Position;
 
-typedef struct
-{
-    int endommage;        // 0 = OK, 1 = Endommagé
-    int enMission;        // 0 = Pas en mission, 1 = En mission
-    int droneMalveillant; // 0 = Normal, 1 = Intrus
-} State;
-
-typedef struct
-{
-    int id;
-    Position pos;
-    State etat;
-    float vitesse;    // Vitesse de déplacement
-    float resolution; // Résolution de photographie
-} Drone;
-
+// Structure pour la carte
 typedef struct
 {
     int largeur;
     int hauteur;
-    char **carte; // Matrice représentant la carte
+    unsigned char *image;    // Image originale chargée
+    unsigned char *revealed; // Carte révélée au fur et à mesure
 } Carte;
+
+// Structure pour le drone
+typedef struct
+{
+    int id;
+    Position pos;  // Position du drone
+    float vitesse; // Vitesse du drone
+    int endommage; // 0 = OK, 1 = Endommagé
+    int enMission; // 0 = Pas en mission, 1 = En mission
+} Drone;
 
 #endif

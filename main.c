@@ -1,33 +1,25 @@
-// main.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "mes_structures.h"
 #include "mes_signatures.h"
 
-#define MAX_DRONES 100 // Limite maximale de drones
-
 int main()
 {
-    Drone drones[MAX_DRONES]; // Tableau pour les drones
-    int nombreDrones = 0;     // Compteur de drones initialisés
+    Drone drones[10]; // Tableau pour un maximum de 10 drones
     Carte carte;
+    int nombreDrones = 0;
 
-    // Initialisation de la carte avec une largeur et hauteur (ex: 30x30)
-    initCarte(&carte, 30, 30);
+    // Initialiser la carte avec une image (par exemple, une carte vierge noire)
+    initCarte(&carte, "./Cartes/CarteParis.png");
 
-    printf("Lecture du scénario...\n");
-    lireScenario("scenario.txt", drones, &nombreDrones);
+    // Lire le fichier de scénario
+    lireScenario("scenario.txt", drones, &nombreDrones, &carte);
 
-    // Afficher la carte après l'exécution
-    afficherCarte(&carte);
+    // Sauvegarder l'état final de la carte révélée
+    sauvegarderCarte(&carte, "carte_revelee.png");
 
-    // Libérer la mémoire allouée pour la carte
-    for (int i = 0; i < carte.hauteur; i++)
-    {
-        free(carte.carte[i]);
-    }
-    free(carte.carte);
+    // Libérer la mémoire de la carte
+    libererCarte(&carte);
 
     return 0;
 }

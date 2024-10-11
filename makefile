@@ -14,4 +14,4 @@ run: main
 	main.exe
 
 clean:
-	del /Q *.o main.exe
+	del /Q *.o main.exe carte_revelee.png
