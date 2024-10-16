@@ -1,35 +1,34 @@
 #include <stdio.h>
 #include "mes_structures.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "STB/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include "STB/stb_image_write.h"
 
 #define MAX_DRONES 10
 
-
 // Tableau des drones (simulant les drones en vol)
 Drone drones[MAX_DRONES];
-int nb_drones = 0; 
-
+int nb_drones = 0;
 
 // Charger l'image en utilisant stb_image
-unsigned char* load_image(const char* chemin, int* largeur, int* hauteur, int* comp){
+unsigned char *load_image(const char *chemin, int *largeur, int *hauteur, int *comp)
+{
     // Le 0 pour charger l'image dans son format d'origine, sans conversion.
-    unsigned char* image = stbi_load(chemin, largeur, hauteur, comp, 0);
-    
+    unsigned char *image = stbi_load(chemin, largeur, hauteur, comp, 0);
+
     // Vérifie si le chargement a échoué
-    if (!image) {
+    if (!image)
+    {
         printf("Erreur : Impossible de charger l'image à l'emplacement '%s'.\n", chemin);
         return NULL;
     }
-    
+
     // Affiche les dimensions de l'image chargée
     printf("Image chargée avec succès: Largeur = %d, Hauteur = %d\n", *largeur, *hauteur);
-    
-    return image;  // Retourne le pointeur vers l'image chargée
-}
 
+    return image; // Retourne le pointeur vers l'image chargée
+}
 
 /*// Fonction pour initialiser un drone
 void initDrone(int nb_drones,float xmin,float xmax ,float ymin,float ymax, float zmax)
@@ -43,7 +42,7 @@ void initDrone(int nb_drones,float xmin,float xmax ,float ymin,float ymax, float
 }
 */
 
- // Fonction pour initialiser un drone
+// Fonction pour initialiser un drone
 Drone creer_drone(int id, float x, float y, float z, float V, Status status)
 {
     Drone *d;
@@ -60,7 +59,6 @@ Drone creer_drone(int id, float x, float y, float z, float V, Status status)
     }
     return *d;
 }
-
 
 // Fonction pour déplacer le drone si le statut est ACTIF
 void deplacerDrone(Drone *d, float dx, float dy, float dz)
