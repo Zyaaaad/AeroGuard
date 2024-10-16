@@ -2,6 +2,7 @@
     "files.associations": {
         "mes_structures.h": "c",
         "Daher_test1.C": "cpp",
-        "string.h": "c"
+        "string.h": "c",
+        "stb_image_write.h": "c"
     }
 }

@@ -30,17 +30,7 @@ unsigned char *load_image(const char *chemin, int *largeur, int *hauteur, int *c
     return image; // Retourne le pointeur vers l'image chargée
 }
 
-/*// Fonction pour initialiser un drone
-void initDrone(int nb_drones,float xmin,float xmax ,float ymin,float ymax, float zmax)
-{
-    Drone *d;
-    d->pos.x = x;
-    d->pos.y = y;
-    d->pos.z = z;
-    d->v = V;
-    d->status = ACTIF;
-}
-*/
+
 
 // Fonction pour initialiser un drone
 Drone creer_drone(int id, float x, float y, float z, float V, Status status)
