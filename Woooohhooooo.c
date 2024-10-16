@@ -128,22 +128,23 @@ double tile_size_degrees(int zoom_level) {
 }
 
 // Initialiser la région autour des coordonnées fournies
+// Initialiser la région autour des coordonnées fournies
+// Initialiser la région autour des coordonnées fournies
 void init_region(Fleet* f, Area* area, int num_drones_side, int zoom_level, float center_lat, float center_lon) {
-    int total_drones = num_drones_side * num_drones_side;
     double tile_size = tile_size_degrees(zoom_level);
-
+    
     // Ajustement du centre
-    float half_tile_span = (num_drones_side / 2.0) * tile_size;
-    area->min_lat = center_lat - half_tile_span;
-    area->max_lat = center_lat + half_tile_span;
-    area->min_lon = center_lon - half_tile_span;
-    area->max_lon = center_lon + half_tile_span;
+    area->min_lat = center_lat - (num_drones_side / 2.0) * tile_size;
+    area->max_lat = center_lat + (num_drones_side / 2.0) * tile_size;
+    area->min_lon = center_lon - (num_drones_side / 2.0) * tile_size;
+    area->max_lon = center_lon + (num_drones_side / 2.0) * tile_size;
 
-    // Initialiser les drones
+    // Initialiser les drones avec la bonne position
     for (int i = 0; i < num_drones_side; i++) {
         for (int j = 0; j < num_drones_side; j++) {
-            float x = area->min_lon + j * tile_size;
-            float y = area->min_lat + i * tile_size;
+            // Ajustement des coordonnées
+            float x = area->min_lon + j * tile_size; // Longitude
+            float y = area->max_lat - i * tile_size; // Latitude (inversée pour correspondre à l'ordre des tuiles)
             Drone d;
             init_drone(&d, i * num_drones_side + j + 1, x, y, 1000.0, 0.0, zoom_level);
             add_drone(f, d);
@@ -152,6 +153,8 @@ void init_region(Fleet* f, Area* area, int num_drones_side, int zoom_level, floa
 
     printf("Zone initiale : min_lat = %.6f, max_lat = %.6f, min_lon = %.6f, max_lon = %.6f\n", area->min_lat, area->max_lat, area->min_lon, area->max_lon);
 }
+
+
 
 // Surveillance continue par les drones et capture d'images
 void monitor_drones(Fleet* f, const char* filename) {
@@ -174,10 +177,10 @@ int main() {
     int num_drones_side = 2; // Grille 2x2
     init_region(&fleet, &area, num_drones_side, 14, center_lat, center_lon);
 
-    // Capture de l'image de la zone initiale à 1000 m
-    monitor_drones(&fleet, "image_composite_initial_1000m.png");
+    // Surveillance des drones et sauvegarde de l'image composite
+    monitor_drones(&fleet, "composite_image.png");
 
-    // Capturer chaque tuile par les drones à 1000 m
+    // Libérer les données d'image
     for (int i = 0; i < fleet.num_drones; i++) {
         if (fleet.drones[i].image_data) {
             stbi_image_free(fleet.drones[i].image_data);

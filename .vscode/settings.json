@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "mes_structures.h": "c"
+        "mes_structures.h": "c",
+        "Daher_test1.C": "cpp",
+        "string.h": "c"
     }
 }
