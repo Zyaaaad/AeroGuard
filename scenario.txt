@@ -1,0 +1,4 @@
+INIT 10 0 0 100 100 50 5 // 10 drones, zone de xMin = 0, yMin = 0, xMax = 100, yMax = 100, portée = 50, résolution = 5
+    MOVE 4 20 30         // Déplacer le drone 4 à la position (20, 30)
+    MOVE 3 50 50         // Déplacer le drone 3 à la position (50, 50)
+    MOVE 1 10 20         // Déplacer le drone 1 à la position (10, 20)
