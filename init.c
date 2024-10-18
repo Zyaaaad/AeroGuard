@@ -191,42 +191,6 @@ int find_closest_drone(int destroyed_index) {
     return closest_drone_index;
 }
 
-void destruct_drone(int drone_id, float xmin, float ymin, float xmax, float ymax,float comm_range,float cam_res) {
-    if (drone_id < 1 || drone_id > drone_count) {
-        printf("Erreur: ID de drone invalide.\n");
-        return;
-    }
-
-    // Decrease drone_id to match the index in the array
-    int index = drone_id - 1;
-    if (drones[index].is_active == 0) {
-        printf("Le drone %d est déjà détruit.\n", drone_id);
-        return;
-    }
-
-    // Marquer le drone comme détruit
-    drones[index].is_active = 0;
-    printf("Drone %d a été détruit.\n", drones[index].id);
-    
-    // Trouver le drone le plus proche
-    int closest_drone_index = find_closest_drone(index);
-    
-    // Remplacer le drone détruit par le drone le plus proche
-    if (closest_drone_index != -1) {
-        printf("Le drone le plus proche est le drone %d.\n", drones[closest_drone_index].id);
-
-        // Remplacer le drone détruit par le plus proche
-        drones[index] = drones[closest_drone_index];
-        drones[closest_drone_index].is_active = 0;  // Marquer l'ancien drone comme détruit
-    }
-
-    // Call the function to adjust remaining drones after destruction
-    adjust_drones_after_destruction(xmin, ymin, xmax, ymax,comm_range,cam_res);
-}
-
-
-
-
 /*
 Lorsque le drone est détruit, il est marqué comme inactif avec is_active = 0.
 La fonction update_neighbors_for_destroyed_drones va parcourir tous les autres drones et vérifier si le drone détruit est dans leur liste de voisins.
@@ -238,7 +202,7 @@ void update_neighbors_for_destroyed_drones(int destroyed_drone_id) {
         return;
     }
 
-    Drone *destroyed_drone = &drones[destroyed_drone_id - 1];
+    Drone *destroyed_drone = &drones[destroyed_drone_id-1];
 
     if (!destroyed_drone->is_active) {
         printf("Mise à jour des voisins pour le drone %d détruit...\n", destroyed_drone_id);
@@ -266,6 +230,60 @@ void update_neighbors_for_destroyed_drones(int destroyed_drone_id) {
     } else {
         printf("Le drone %d est toujours actif, pas besoin de mise à jour.\n", destroyed_drone_id);
     }
+}
+
+// Fonction pour supprimer un drone du tableau et réorganiser le tableau
+void remove_drone(int index) {
+    if (index < 0 || index >= drone_count) {
+        printf("Index de drone invalide pour suppression.\n");
+        return;
+    }
+    
+    // Décaler les drones suivants dans le tableau pour combler le vide
+    for (int i = index; i < drone_count - 1; i++) {
+        drones[i] = drones[i + 1];
+    }
+    // Réduire le nombre de drones
+    drone_count--;
+    printf("Drone à l'index %d supprimé. Nouveau nombre de drones: %d\n", index + 1, drone_count);
+}
+
+
+void destruct_drone(int drone_id, float xmin, float ymin, float xmax, float ymax,float comm_range,float cam_res) {
+    if (drone_id < 1 || drone_id > drone_count) {
+        printf("\nErreur: ID de drone invalide.\n");
+        return;
+    }
+
+    // Decrease drone_id to match the index in the array
+    int index = drone_id - 1;
+    if (drones[index].is_active == 0) {
+        printf("Le drone %d est déjà détruit.\n", drone_id);
+        return;
+    }
+
+    // Marquer le drone comme détruit
+    drones[index].is_active = 0;
+    printf("\nDrone %d a été détruit.\n", drones[index].id);
+    
+    // Trouver le drone le plus proche
+    //int closest_drone_index = find_closest_drone(index);
+    
+    // Remplacer le drone détruit par le drone le plus proche
+    /*if (closest_drone_index != -1) {
+        printf("Le drone le plus proche est le drone %d.\n", drones[closest_drone_index].id);
+
+        // Remplacer le drone détruit par le plus proche
+        drones[index] = drones[closest_drone_index];
+        drones[closest_drone_index].is_active = 0;  // Marquer l'ancien drone comme détruit
+    }*/
+
+    update_neighbors_for_destroyed_drones(drone_id);
+    // Supprimer le drone du tableau
+    remove_drone(index);
+    
+    // Call the function to adjust remaining drones after destruction
+    adjust_drones_after_destruction(xmin, ymin, xmax, ymax,comm_range,cam_res);
 }
 
 
@@ -398,6 +416,7 @@ void adjustDronesPosition() {
 
 
 void print_neighbors() {
+    printf("\n");
     for (int i = 0; i < drone_count; i++) {
         printf("Drone %d a %d voisins: ", drones[i].id, drones[i].neighbor_count);
         for (int j = 0; j < drones[i].neighbor_count; j++) {
@@ -409,6 +428,7 @@ void print_neighbors() {
 
 
 void print_drone_infos() {
+    printf("\n");
     for (int i = 0; i < drone_count; i++) {
         printf("Drone %d:\n", drones[i].id);
         printf("  Position (x=%.3f, y=%.3f, z=%.3f)\n", drones[i].x, drones[i].y, drones[i].z);
@@ -464,25 +484,21 @@ int main() {
     // Répartir initialement les drones
     spread_drones(num_drones, xMin, yMin, xMax, yMax, comm_range, cam_res);
     print_drone_infos();
-
     detect_neighbors();
     print_neighbors();
 
     // Demander à l'utilisateur quel drone détruire
-    printf("Entrez l'ID du drone à détruire: ");
+    printf("\n\nEntrez l'ID du drone à détruire: ");
     scanf("%d", &drone_id);
 
     // Détruire le drone
     destruct_drone(drone_id,xMin,yMin,xMax,yMax,comm_range,cam_res);
 
-    // Mise à jour des voisins après destruction
-    update_neighbors_for_destroyed_drones(drone_id);
-
     // Ajustement des drones voisins après la destruction
     adjustDronesPosition();
 
     // Afficher les informations des drones restants et leurs nouveaux voisins
-    print_drone_infos();
+    detect_neighbors();
     print_neighbors();
 
     return 0;
