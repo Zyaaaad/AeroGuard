@@ -5,6 +5,7 @@
         "string.h": "c",
         "stb_image_write.h": "c",
         "stdio.h": "c",
-        "math.h": "c"
+        "math.h": "c",
+        "*.txt": "cpp"
     }
 }
