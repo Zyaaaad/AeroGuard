@@ -499,7 +499,7 @@ int main() {
 
     // Afficher les informations des drones restants et leurs nouveaux voisins
     detect_neighbors();
-    print_neighbors();
+    print_drone_infos();
 
     return 0;
 }
