@@ -1,128 +1,167 @@
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "STB/stb_image_write.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "STB/stb_image.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
-// Inclure la bibliothèque stb_image_write.h
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "STB/stb_image_write.h"
+#define MAX_DRONES 30
+//Definir un vitesse maximal
+#define VMAX 50
+#define alpha 0.05
+#define MAX_NEIGHBORS 4
 
-#define MAX_DRONES 10
-#define IMAGE_WIDTH 512
-#define IMAGE_HEIGHT 512
-
-// Définition d'une structure pour un drone
 typedef struct {
     int id;
-    float x, y; // Coordonnées
-    float coverage; // Couverture
+    float x, y, z; // position
+    float coverage;
+    float vx, vy, vz; // velocity
+    float communication_range;
+    float camera_resolution;
+    int neighbors[MAX_NEIGHBORS]; // list of neighbors
+    int neighbor_count;
+    int is_active; // 1 if drone is active, 0 if destroyed
 } Drone;
 
-Drone drones[MAX_DRONES]; // Tableau global des drones
-int drone_count = 0; // Compteur de drones actifs
 
-// Fonction pour initialiser les drones
-void spread_drones_simple(int num_drones, float xmin, float ymin, float xmax, float ymax) {
-    float grid_width = (xmax - xmin) / (float)ceil(sqrt(num_drones));
-    float grid_height = (ymax - ymin) / (float)ceil(sqrt(num_drones));
+Drone drones[MAX_DRONES];
+
+int drone_count = 0;
+
+// Function to initialize drones and spread them over a defined area
+void spread_drones(int num_drones, float xmin, float ymin, float xmax, float ymax, float comm_range, float cam_res) {
+  
+  
+
+    float total_area = (xmax - xmin) * (ymax - ymin);
     
+    float c=sqrt(total_area/num_drones);
+    float h=c/(2*tan(alpha));
+    
+    //float drone_coverage = calculate_coverage(altitude, alpha);
+    
+    // Determine the grid size based on drone coverage
+    float grid_size = c;
+    int drones_per_row = (int)ceil((xmax - xmin) / grid_size);
+    int drones_per_column = (int)ceil((ymax - ymin) / grid_size);
+    
+    // Initialize the drones
     int drone_id = 0;
-
-    for (float x = xmin; x < xmax && drone_id < num_drones; x += grid_width) {
-        for (float y = ymin; y < ymax && drone_id < num_drones; y += grid_height) {
-            // Initialiser le drone
+    for (int i = 0; i < drones_per_row && drone_id < num_drones; i++) {
+        for (int j = 0; j < drones_per_column && drone_id < num_drones; j++) {
+            // Calculate the position of each drone
+            float x = xmin + i * grid_size + grid_size/2 ;
+            float y = ymin + j * grid_size + grid_size/2;
+            float z = h; // Adjust altitude dynamically if needed
+            
+            // Initialize the drone
             drones[drone_id].id = drone_id + 1;
-            drones[drone_id].x = x + grid_width / 2; // Centrer le drone
-            drones[drone_id].y = y + grid_height / 2; // Centrer le drone
-            drones[drone_id].coverage = grid_width; // Définir la couverture (largeur de la zone)
+            drones[drone_id].x = x;
+            drones[drone_id].y = y;
+            drones[drone_id].z = z;
+            drones[drone_id].coverage = c*c;
+            drones[drone_id].vx = 0;
+            drones[drone_id].vy = 0;
+            drones[drone_id].vz = 0;
+            drones[drone_id].communication_range = comm_range;
+            drones[drone_id].camera_resolution = cam_res;
+            drones[drone_id].is_active=1;
+        
 
             drone_id++;
         }
     }
 
-    drone_count = drone_id; // Mettre à jour le compteur de drones
+    drone_count = drone_id;
 }
 
-// Tableau de couleurs pour les zones de couverture
-unsigned char colors[MAX_DRONES][3] = {
-    {255, 0, 0},    // Rouge
-    {0, 255, 0},    // Vert
-    {0, 0, 255},    // Bleu
-    {255, 255, 0},  // Jaune
-    {255, 0, 255},  // Magenta
-    {0, 255, 255},  // Cyan
-    {192, 192, 192}, // Gris
-    {128, 0, 128},   // Violet
-    {180, 128, 180}  // Autre couleur
-};
 
-// Fonction pour dessiner les drones et leur couverture sur une image
-void draw_drones_on_image(const char* filename) {
-    // Créer un tableau de pixels pour l'image (RGB)
-    unsigned char *image = (unsigned char *)malloc(IMAGE_WIDTH * IMAGE_HEIGHT * 3);
-    // Initialiser l'image à noir
-    for (int i = 0; i < IMAGE_WIDTH * IMAGE_HEIGHT * 3; i++) {
-        image[i] = 0; // Noir
-    }
+float move(int id, float x, float y, float z){
+    //Récuperer le drone par son id
+    Drone *d = &drones[id];
+    
+    //Calculer le distance parcourus 
+    float dx,dy,dz,distance;
+    dx = x - d->x;
+    dy = y - d->y;
+    dz = z - d->z;
+    distance = sqrt(dx*dx + dy*dy + dz*dz);
 
-    int drone_radius = 8; // Rayon du drone
-    int coverage_size = 40; // Taille de la zone de couverture (carré)
+    //Mise à jour des coordonées du drone
+    d->x = x;
+    d->y = y;
+    d->z = z;
 
-    // Dessiner chaque drone et sa couverture
+    //Calculer le temps de deplacement
+    float t;
+    t = distance/VMAX;
+
+    //tester la fonction
+    printf("Drone %d arrive à (x=%.3f, y=%.3f, z=%.3f)\n",d->id, d->x, d->y ,d->z);
+    // retourner le temps pour pouvoir l'utiliser après
+    return t;
+}
+
+void print_drone_infos() {
     for (int i = 0; i < drone_count; i++) {
-        int x_pos = (int)drones[i].x; // Convertir la position x
-        int y_pos = (int)drones[i].y; // Convertir la position y
-
-        // Vérifiez si les coordonnées sont dans les limites de l'image
-        if (x_pos >= 0 && x_pos < IMAGE_WIDTH && y_pos >= 0 && y_pos < IMAGE_HEIGHT) {
-            // Dessiner un drone en blanc
-            for (int dy = -drone_radius; dy <= drone_radius; dy++) {
-                for (int dx = -drone_radius; dx <= drone_radius; dx++) {
-                    if (dx * dx + dy * dy <= drone_radius * drone_radius) { // Vérifie si dans le cercle
-                        int px = x_pos + dx;
-                        int py = y_pos + dy;
-                        // Vérifiez les limites de l'image
-                        if (px >= 0 && px < IMAGE_WIDTH && py >= 0 && py < IMAGE_HEIGHT) {
-                            // Appliquer la couleur blanche pour le drone
-                            image[(py * IMAGE_WIDTH + px) * 3 + 0] = 255; // Rouge
-                            image[(py * IMAGE_WIDTH + px) * 3 + 1] = 255; // Vert
-                            image[(py * IMAGE_WIDTH + px) * 3 + 2] = 255; // Bleu
-                        }
-                    }
-                }
-            }
-
-            // Dessiner la zone de couverture (carrée)
-            for (int dy = -coverage_size / 2; dy <= coverage_size / 2; dy++) {
-                for (int dx = -coverage_size / 2; dx <= coverage_size / 2; dx++) {
-                    int px = x_pos + dx;
-                    int py = y_pos + dy;
-                    // Vérifiez les limites de l'image
-                    if (px >= 0 && px < IMAGE_WIDTH && py >= 0 && py < IMAGE_HEIGHT) {
-                        // Appliquer la couleur unique pour la couverture
-                        image[(py * IMAGE_WIDTH + px) * 3 + 0] = colors[i % MAX_DRONES][0]; // Rouge
-                        image[(py * IMAGE_WIDTH + px) * 3 + 1] = colors[i % MAX_DRONES][1]; // Vert
-                        image[(py * IMAGE_WIDTH + px) * 3 + 2] = colors[i % MAX_DRONES][2]; // Bleu
-                    }
-                }
-            }
-        }
+        printf("Drone %d:\n", drones[i].id);
+        printf("  Position (x=%.3f, y=%.3f, z=%.3f)\n", drones[i].x, drones[i].y, drones[i].z);
+        printf("  Coverage Area = %.3f m^2\n", drones[i].coverage);
+        printf("  Velocity (vx=%.3f, vy=%.3f, vz=%.3f)\n", drones[i].vx, drones[i].vy, drones[i].vz);
+        printf("  Communication Range = %.3f meters\n", drones[i].communication_range);
+        printf("  Camera Resolution = %.3f pixels\n", drones[i].camera_resolution);
+        printf("  Active Status = %s\n", drones[i].is_active ? "Active" : "Destroyed");
+        printf("\n");
     }
-
-    // Sauvegarder l'image en format PNG
-    stbi_write_png(filename, IMAGE_WIDTH, IMAGE_HEIGHT, 3, image, IMAGE_WIDTH * 3);
-
-    // Libérer la mémoire
-    free(image);
 }
 
-// Fonction principale
+void speed(int id, float vx, float vy, float vz , float t){
+    //Recuperer le drone par son id
+    Drone *d = &drones[id];
+
+    // Tester si la vitesse deppaser la vitesse maximal
+    if (sqrt(vx*vx + vy*vy + vz*vz) > VMAX){
+        //Au lieu de laisser la vitesse deppasser la VMAX on l'associe
+        float facteur = VMAX / sqrt(vx*vx + vy*vy + vz*vz);
+        vx *= facteur;
+        vy *= facteur;
+        vz *= facteur;
+    }
+
+    int x0, y0, z0;
+    x0 = d->x ;
+    y0 = d->y;
+    z0 = d->z;
+
+    //Mettre à jour la position du drone selon la vitesse et le temps
+    d->x = vx * t + x0;
+    d->y = vy * t + y0;
+    d->z = vz * t + z0;
+}
+
 int main() {
-    // Initialiser les drones
-    spread_drones_simple(9, 0.0, 0.0, 512.0, 512.0);
+   int num_drones;
+    float xMin, yMin, xMax, yMax,  comm_range, cam_res;
+    
 
-    // Dessiner les drones et leur couverture sur une image et sauvegarder
-    draw_drones_on_image("drones_with_square_coverage.png");
+    // Example input: Number of drones, area dimensions, and angle alpha (in radians)
+    printf("Enter the number of drones: ");
+    scanf("%d", &num_drones);
+    
+    printf("Enter the area dimensions (xMin yMin xMax yMax): ");
+    scanf("%f %f %f %f", &xMin, &yMin, &xMax, &yMax);
 
-    printf("Image générée : drones_with_square_coverage.png\n");
-    return 0;
+    printf("Enter the communication range: ");
+    scanf("%f", &comm_range);
+    printf("Enter the camera resolution: ");
+    scanf("%f", &cam_res);
+
+    // Spread drones in the given area
+    spread_drones(num_drones, xMin, yMin, xMax, yMax,comm_range,cam_res);
+
+    print_drone_infos();
+    move(0,2,2,2);
+     
 }
