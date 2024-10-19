@@ -2,6 +2,7 @@
 #include <math.h>
 #include "mes_structures.h"
 #include "mes_signatures.h"
+#include <stdbool.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "STB/stb_image.h"
@@ -69,76 +70,118 @@ void print_move_action(int drone_id, float new_x, float new_y)
     printf("\nRéajustement des autres drones...\n");
 }
 
+
+// Fonction pour détecter une collision avec un autre drone
+bool isCollision(float x, float y, float z, int id) {
+    for (int i = 0; i < drone_count; i++) {
+        if (i != id && drones[i].is_active) {
+            float dx = x - drones[i].x;
+            float dy = y - drones[i].y;
+            float distance = sqrt(dx * dx + dy * dy);
+             printf("Distance entre Drone %d et Drone %d = %.3f\n", id+1 , drones[i].id, distance);
+            if (distance < 0.1) {
+                return true; // Collision détectée
+            }
+        }
+    }
+    return false;
+}
+
+
 // === Fonctions de gestion des déplacements ===
 
 float move(int id, float x, float y, float z)
 {
-    Drone *d = &drones[id];
-    float dx = x - d->x;
-    float dy = y - d->y;
-    float dz = z - d->z;
-    float distance = sqrt(dx * dx + dy * dy + dz * dz);
+    // Vérifier s'il y a une collision avec un autre drone
+    if (isCollision(x, y, drones[id - 1].z, id )) {
+        printf("Collision détectée avec un autre drone.\n");
+        return 0; 
+    }
+    else{
+        Drone *d = &drones[id];
+        float dx = x - d->x;
+        float dy = y - d->y;
+        float dz = z - d->z;
+        float distance = sqrt(dx * dx + dy * dy + dz * dz);
 
-    d->x = x;
-    d->y = y;
-    d->z = z;
+        d->x = x;
+        d->y = y;
+        d->z = z;
 
-    float t = distance / VMAX;
-    return t;
+        float t = distance / VMAX;
+        return t;
+    }
 }
+
+// Fonction pour optimiser les positions des autres drones
+void optimizeDronePositions(int id) {
+    for (int i = 0; i < drone_count; i++) {
+        if (i != id && drones[i].is_active) {
+            // Ajustement basé sur la portée de communication
+            float offset = drones[id].communication_range / 2;
+            if (drones[i].x > drones[id].x) {
+                drones[i].x += offset;
+            } else {
+                drones[i].x -= offset;
+            }
+
+            if (drones[i].y > drones[id].y) {
+                drones[i].y += offset;
+            } else {
+                drones[i].y -= offset;
+            }
+        }
+        printf("Drone %d ajusté à (x=%.3f, y=%.3f, z=%.3f)\n", drones[i].id, drones[i].x, drones[i].y, drones[i].z);
+
+    }
+}
+
 
 void adjustDronesPosition(int fixed_drone_id, float new_x, float new_y, float xmin, float ymin, float xmax, float ymax)
 {
-    move(fixed_drone_id - 1, new_x, new_y, drones[fixed_drone_id - 1].z);
-
-    float centroid_x = 0.0, centroid_y = 0.0, centroid_z = 0.0;
-    for (int i = 0; i < drone_count; i++)
-    {
-        centroid_x += drones[i].x;
-        centroid_y += drones[i].y;
-        centroid_z += drones[i].z;
-    }
-    centroid_x /= drone_count;
-    centroid_y /= drone_count;
-    centroid_z /= drone_count;
-
-    for (int i = 0; i < drone_count; i++)
-    {
-        if (i != fixed_drone_id - 1 && drones[i].is_active)
-        {
-            Drone *d = &drones[i];
-            float vx = d->x - centroid_x;
-            float vy = d->y - centroid_y;
-            float vz = d->z - centroid_z;
-
-            float magnitude = sqrt(vx * vx + vy * vy + vz * vz);
-            vx /= magnitude;
-            vy /= magnitude;
-            vz /= magnitude;
-
-            float offset_distance = 2.0;
-            d->x += vx * offset_distance;
-            d->y += vy * offset_distance;
-            d->z += vz * offset_distance;
-
-            if (d->x < xmin)
-                d->x = xmin;
-            if (d->x > xmax)
-                d->x = xmax;
-            if (d->y < ymin)
-                d->y = ymin;
-            if (d->y > ymax)
-                d->y = ymax;
-
-            printf("Drone %d ajusté à (x=%.3f, y=%.3f, z=%.3f)\n", d->id, d->x, d->y, d->z);
-        }
+    
+    if ((fixed_drone_id < 0) || (fixed_drone_id >= drone_count) || (!drones[fixed_drone_id - 1].is_active)) {
+        printf("Error: ID Invalid ou drone non-actif.\n");
+        return ; 
     }
 
-    avoid_collisions();
+    // Vérifier si les coordonnées sont dans les limites
+    if ((new_x < xmin)|| (new_x > xmax) || (new_y < ymin)|| (new_y > ymax) || drones[fixed_drone_id-1].z < 0) {
+        printf("Error: Destination en dehors de la zone!.\n");
+        return ; 
+    }
+    // Déplacer le drone à la nouvelle position
+    if(move(fixed_drone_id - 1, new_x, new_y, drones[fixed_drone_id - 1].z)){
+        optimizeDronePositions(fixed_drone_id - 1);
+    }
+
+}
+
+void speed(int id, float vx, float vy, float vz , float t){
+    //Recuperer le drone par son id
+    Drone *d = &drones[id];
+
+    // Tester si la vitesse deppaser la vitesse maximal
+    if (sqrt(vx*vx + vy*vy + vz*vz) > VMAX){
+        //Au lieu de laisser la vitesse deppasser la VMAX on l'associe
+        float facteur = VMAX / sqrt(vx*vx + vy*vy + vz*vz);
+        vx *= facteur;
+        vy *= facteur;
+        vz *= facteur;
+    }
+
+    int x0, y0, z0;
+    x0 = d->x ;
+    y0 = d->y;
+    z0 = d->z;
+
+    //Mettre à jour la position du drone selon la vitesse et le temps
+    d->x = vx * t + x0;
+    d->y = vy * t + y0;
+    d->z = vz * t + z0;
 }
 
 // === Fonctions de gestion des voisins ===
-
 void detect_neighbors()
 {
     for (int i = 0; i < drone_count; i++)
@@ -273,7 +316,7 @@ void avoid_collisions()
                                       pow(drones[i].y - drones[j].y, 2) +
                                       pow(drones[i].z - drones[j].z, 2));
 
-                if (distance < 1.0)
+                if (distance < 0.5)
                 {
                     float dx = drones[i].x - drones[j].x;
                     float dy = drones[i].y - drones[j].y;

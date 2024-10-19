@@ -10,10 +10,6 @@ mes_fonctions.o: mes_fonctions.c mes_structures.h mes_signatures.h
 	gcc -c mes_fonctions.c
 
 run: main
-	chcp 65001 > nul
-	cls
-	main.exe
-
+	./main.exe
 clean:
-	del /Q *.o main.exe
-	
+	rm main.exe
