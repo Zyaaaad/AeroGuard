@@ -8,11 +8,12 @@
 void print_drone_infos();
 void print_neighbors();
 void print_move_action(int drone_id, float new_x, float new_y);
+void print_speed_action(int drone_id, float vx, float vy, float vz,float delta_t);
 
 // Fonctions de gestion des déplacements
 void adjustDronesPosition(int fixed_drone_id, float new_x, float new_y, float xmin, float ymin, float xmax, float ymax); // Réajuste la position des drones après le déplacement
 float move(int id, float x, float y, float z);
-void speed(int id, float vx, float vy, float vz , float t);
+float* speed(int id, float vx, float vy, float vz , float t);
 
 // Fonctions de gestion des voisins (détection et mise à jour)
 void detect_neighbors();

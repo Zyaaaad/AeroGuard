@@ -47,6 +47,27 @@ int main()
             adjustDronesPosition(drone_id, new_x, new_y, xMin, yMin, xMax, yMax);
             print_drone_infos();
             print_neighbors();
+
+        }
+        else if (strcmp(command, "SPEED") == 0)
+        {
+            int id;
+            float vx, vy, vz, delta_t = 0;
+            char* delta_t_str;
+            float* new_coords;
+            sscanf(line, "%*s %d %f %f %f %f", &id, &vx, &vy, &vz,&delta_t);
+            print_speed_action(id, vx, vy, vz, delta_t);
+            // Check if delta_t is included in the command (if ';' is present)
+            // else 
+            // Use global t_max if delta_t is not provided
+            //  delta_t = t_max;}
+            new_coords = speed(id,vx, vy, vz, delta_t);
+            print_drone_infos();
+            print_neighbors();
+            if (new_coords) {
+                printf("Drone %d moved to new position: x = %f, y = %f, z = %f\n", id, new_coords[0], new_coords[1], new_coords[2]);
+                free(new_coords);  // Free the memory after use
+            }
         }
         // Si la commande est DESTROY, détruire le drone spécifié
         else if (strcmp(command, "DESTROY") == 0)

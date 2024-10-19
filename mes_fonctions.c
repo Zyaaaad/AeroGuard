@@ -36,6 +36,7 @@ void print_drone_infos()
     {
         printf("\nDrone %d :\n", drones[i].id);
         printf("  Position (x=%.3f, y=%.3f, z=%.3f)\n", drones[i].x, drones[i].y, drones[i].z);
+        printf("  Vitesse (vx=%.3f, vy=%.3f, vz=%.3f)\n", drones[i].vx, drones[i].vy, drones[i].vz);
         printf("  Statut : %s\n", drones[i].is_active ? "Actif" : "Détruit");
     }
     printf("\n===============================\n");
@@ -70,6 +71,11 @@ void print_move_action(int drone_id, float new_x, float new_y)
     printf("\nRéajustement des autres drones...\n");
 }
 
+void print_speed_action(int drone_id, float vx, float vy, float vz,float delta_t)
+{
+    printf("\nDrone %d se déplace avec un vecteur vitesse (vx=%.3f, vy=%.3f, vz=%.3f)\n", drone_id, vx, vy, vz);
+    printf("\nAjustement des autres drones...\n");
+}
 
 // Fonction pour détecter une collision avec un autre drone
 bool isCollision(float x, float y, float z, int id) {
@@ -157,9 +163,21 @@ void adjustDronesPosition(int fixed_drone_id, float new_x, float new_y, float xm
 
 }
 
-void speed(int id, float vx, float vy, float vz , float t){
+float* speed(int id, float vx, float vy, float vz , float t){
+    //Verifier l ID
+    
+    if ((id < 0) || (id >= drone_count) || (!drones[id-1].is_active)) {
+        printf("Error: Invalid drone ID or drone is not active.\n");
+        return NULL; // Return NULL to indicate an error
+    }
+
     //Recuperer le drone par son id
-    Drone *d = &drones[id];
+    Drone *d = &drones[id-1];
+    int x0, y0, z0;
+
+    x0 = d->x ;
+    y0 = d->y;
+    z0 = d->z;
 
     // Tester si la vitesse deppaser la vitesse maximal
     if (sqrt(vx*vx + vy*vy + vz*vz) > VMAX){
@@ -170,15 +188,36 @@ void speed(int id, float vx, float vy, float vz , float t){
         vz *= facteur;
     }
 
-    int x0, y0, z0;
-    x0 = d->x ;
-    y0 = d->y;
-    z0 = d->z;
-
     //Mettre à jour la position du drone selon la vitesse et le temps
-    d->x = vx * t + x0;
-    d->y = vy * t + y0;
-    d->z = vz * t + z0;
+    float new_x = vx * t + d->x;
+    float new_y= vy * t + d->y;
+    float new_z = vz * t + d->z;
+
+    d->x = new_x;
+    d->y = new_y;
+    d->z = new_z;
+
+    d->vx += vx;
+    d->vy += vy;
+    d->vz += vz;
+
+    // Allocate memory to store the new coordinates
+    float* newco = (float*)malloc(3 * sizeof(float));
+    if (newco == NULL) {
+        printf("Error: Memory allocation failed.\n");
+        return NULL; // Return NULL if memory allocation fails
+    }
+
+    // Set the new coordinates
+    newco[0] = d->x;
+    newco[1] = d->y;
+    newco[2] = d->z;
+
+    //Il faut Vérifier si les coordonnées sont dans les limites
+    
+    optimizeDronePositions(id-1);
+
+    return newco;
 }
 
 // === Fonctions de gestion des voisins ===
