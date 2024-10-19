@@ -12,4 +12,4 @@ mes_fonctions.o: mes_fonctions.c mes_structures.h mes_signatures.h
 run: main
 	./main.exe
 clean:
-	rm main.exe
+	del /Q *.o main.exe
