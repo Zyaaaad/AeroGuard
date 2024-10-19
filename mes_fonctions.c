@@ -216,6 +216,7 @@ float* speed(int id, float vx, float vy, float vz , float t){
     //Il faut Vérifier si les coordonnées sont dans les limites
     
     optimizeDronePositions(id-1);
+    detect_neighbors();
 
     return newco;
 }

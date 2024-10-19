@@ -37,6 +37,7 @@ int main()
             spread_drones(num_drones, xMin, yMin, xMax, yMax, comm_range, cam_res);
             print_drone_infos();
             detect_neighbors();
+            print_neighbors();
         }
         // Si la commande est MOVE, déplacer le drone spécifié
         else if (strcmp(command, "MOVE") == 0)
