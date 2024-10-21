@@ -1,7 +1,40 @@
 # AeroGuard
 
-# 16/10
-# J'ai fixer les bases seulement (Drones_Missions.c) et on doit les modifier dès que possible
+# makefile WINDOWS
 
-#17/10
-# les resultas du fichier init.c se trouvent dans le repertoire output
+all: main run
+
+main: main.o mes_fonctions.o
+gcc -o main main.o mes_fonctions.o
+
+main.o: main.c mes_structures.h mes_signatures.h
+gcc -c main.c
+
+mes_fonctions.o: mes_fonctions.c mes_structures.h mes_signatures.h
+gcc -c mes_fonctions.c
+
+run: main
+chcp 65001 > nul
+cls
+./main.exe
+clean:
+del /Q \*.o main.exe
+
+#makefile LINUX
+
+all: main run
+
+main: main.o mes_fonctions.o
+gcc -o main main.o mes_fonctions.o
+
+main.o: main.c mes_structures.h mes_signatures.h
+gcc -c main.c
+
+mes_fonctions.o: mes_fonctions.c mes_structures.h mes_signatures.h
+gcc -c mes_fonctions.c
+
+run: main
+./main
+
+clean:
+rm -f \*.o main
