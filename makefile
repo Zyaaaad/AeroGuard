@@ -15,3 +15,4 @@ run: main
 	./main.exe
 clean:
 	del /Q *.o main.exe
+	@if exist Captures rmdir /S /Q Captures

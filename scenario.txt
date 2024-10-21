@@ -1,2 +1,4 @@
-INIT 4 0 0 4 4 2 5 //
-    SPEED 1 1 1 0 1   //
+INIT 4 0 0 100 100 50 5 // Initialise 4 drones
+    CAPTURE 14          // Drones capturent les images
+    DESTROY 2           // Détruit le drone 2
+    CAPTURE 14

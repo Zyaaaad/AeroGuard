@@ -6,10 +6,10 @@
 #include <sys/stat.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "STB/stb_image.h"
+#include "../STB/stb_image.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "STB/stb_image_write.h"
+#include "../STB/stb_image_write.h"
 
 #define MAX_DRONES 10
 #define M_PI 3.14159265358979323846

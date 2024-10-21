@@ -19,6 +19,7 @@ cls
 ./main.exe
 clean:
 del /Q \*.o main.exe
+@if exist Captures rmdir /S /Q Captures
 
 # makefile LINUX
 
@@ -38,3 +39,4 @@ run: main
 
 clean:
 rm -f \*.o main
+@if [ -d Captures ]; then rm -rf Captures; fi
