@@ -20,7 +20,7 @@ cls
 clean:
 del /Q \*.o main.exe
 
-#makefile LINUX
+# makefile LINUX
 
 all: main run
 
