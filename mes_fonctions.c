@@ -1,436 +1,199 @@
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "mes_structures.h"
 #include "mes_signatures.h"
 #include <stdbool.h>
+#include <sys/stat.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "STB/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "STB/stb_image_write.h"
 
-#define MAX_DRONES 30
-#define MAX_NEIGHBORS 10
+#define M_PI 3.14159265358979323846
 
-#define VMAX 50
-#define alpha 0.05
-
-#define MAX_LINE_LENGTH 100
-
-Drone drones[MAX_DRONES];
-int drone_count = 0;
-
-// === Fonctions d'affichage des informations des drones ===
-
-void print_drone_infos()
+// Fonction pour créer un répertoire
+void create_directory(const char *dir)
 {
-    printf("\n=== Informations des drones ===\n");
-
-    if (drone_count > 0)
+#ifdef _WIN32
+    // Utiliser mkdir avec un seul argument sous Windows
+    if (_mkdir(dir) != 0)
     {
-        printf("Zone de couverture par drone = %.3f m²\n", drones[0].coverage);
-        printf("Portée de communication = %.3f mètres\n", drones[0].communication_range);
+        perror("Erreur lors de la création du répertoire");
     }
-
-    for (int i = 0; i < drone_count; i++)
+#else
+    // Utiliser mkdir avec deux arguments sous POSIX
+    if (mkdir(dir, 0755) != 0)
     {
-        printf("\nDrone %d :\n", drones[i].id);
-        printf("  Position (x=%.3f, y=%.3f, z=%.3f)\n", drones[i].x, drones[i].y, drones[i].z);
-        printf("  Vitesse (vx=%.3f, vy=%.3f, vz=%.3f)\n", drones[i].vx, drones[i].vy, drones[i].vz);
-        printf("  Statut : %s\n", drones[i].is_active ? "Actif" : "Détruit");
+        perror("Erreur lors de la création du répertoire");
     }
-    printf("\n===============================\n");
+#endif
 }
 
-void print_neighbors()
+// Initialisation des drones avec le statut actif
+void init_drone(Drone *d, int id, float x, float y, float z, float v, int zoom_level)
 {
-    printf("\n=== Voisins des drones ===\n");
-    for (int i = 0; i < drone_count; i++)
+    d->id = id;
+    d->x = x;
+    d->y = y;
+    d->z = z;
+    d->v = v;
+    d->leader = 0;
+    d->zoom_level = zoom_level;
+    d->image_data = NULL;
+    d->destroyed = 0; // Indicateur de destruction
+    d->active = 1;    // Drone actif au départ
+    printf("Drone %d initialisé à la position (%.6f, %.6f, %.2f) avec le niveau de zoom %d\n", id, x, y, z, zoom_level);
+}
+
+void add_drone(Fleet *f, Drone d)
+{
+    if (f->num_drones < MAX_DRONES)
     {
-        printf("Drone %d : ", drones[i].id);
-        if (drones[i].neighbor_count == 0)
+        f->drones[f->num_drones] = d;
+        f->num_drones++;
+    }
+}
+
+// Ajuster la position et couverture après la destruction
+void adjust_drones_after_destruction(Fleet *f)
+{
+    for (int i = 0; i < f->num_drones; i++)
+    {
+        if (f->drones[i].destroyed == 1)
         {
-            printf("Pas de voisins.\n");
-        }
-        else
-        {
-            printf("Voisins : ");
-            for (int j = 0; j < drones[i].neighbor_count; j++)
-            {
-                printf("%d ", drones[i].neighbors[j]);
-            }
-            printf("\n");
-        }
-    }
-    printf("===============================\n");
-}
-
-void print_move_action(int drone_id, float new_x, float new_y)
-{
-    printf("\nDrone %d déplacé à la nouvelle position (x=%.3f, y=%.3f)\n", drone_id, new_x, new_y);
-    printf("\nRéajustement des autres drones...\n");
-}
-
-void print_speed_action(int drone_id, float vx, float vy, float vz,float delta_t)
-{
-    printf("\nDrone %d se déplace avec un vecteur vitesse (vx=%.3f, vy=%.3f, vz=%.3f)\n", drone_id, vx, vy, vz);
-    printf("\nAjustement des autres drones...\n");
-}
-
-// Fonction pour détecter une collision avec un autre drone
-bool isCollision(float x, float y, float z, int id) {
-    for (int i = 0; i < drone_count; i++) {
-        if (i != id && drones[i].is_active) {
-            float dx = x - drones[i].x;
-            float dy = y - drones[i].y;
-            float distance = sqrt(dx * dx + dy * dy);
-             printf("Distance entre Drone %d et Drone %d = %.3f\n", id+1 , drones[i].id, distance);
-            if (distance < 0.1) {
-                return true; // Collision détectée
-            }
-        }
-    }
-    return false;
-}
-
-
-// === Fonctions de gestion des déplacements ===
-
-float move(int id, float x, float y, float z)
-{
-    // Vérifier s'il y a une collision avec un autre drone
-    if (isCollision(x, y, drones[id - 1].z, id )) {
-        printf("Collision détectée avec un autre drone.\n");
-        return 0; 
-    }
-    else{
-        Drone *d = &drones[id];
-        float dx = x - d->x;
-        float dy = y - d->y;
-        float dz = z - d->z;
-        float distance = sqrt(dx * dx + dy * dy + dz * dz);
-
-        d->x = x;
-        d->y = y;
-        d->z = z;
-
-        float t = distance / VMAX;
-        return t;
-    }
-}
-
-// Fonction pour optimiser les positions des autres drones
-void optimizeDronePositions(int id) {
-    for (int i = 0; i < drone_count; i++) {
-        if (i != id && drones[i].is_active) {
-            // Ajustement basé sur la portée de communication
-            float offset = drones[id].communication_range / 2;
-            if (drones[i].x > drones[id].x) {
-                drones[i].x += offset;
-            } else {
-                drones[i].x -= offset;
-            }
-
-            if (drones[i].y > drones[id].y) {
-                drones[i].y += offset;
-            } else {
-                drones[i].y -= offset;
-            }
-        }
-        printf("Drone %d ajusté à (x=%.3f, y=%.3f, z=%.3f)\n", drones[i].id, drones[i].x, drones[i].y, drones[i].z);
-
-    }
-}
-
-
-void adjustDronesPosition(int fixed_drone_id, float new_x, float new_y, float xmin, float ymin, float xmax, float ymax)
-{
-    
-    if ((fixed_drone_id < 0) || (fixed_drone_id >= drone_count) || (!drones[fixed_drone_id - 1].is_active)) {
-        printf("Error: ID Invalid ou drone non-actif.\n");
-        return ; 
-    }
-
-    // Vérifier si les coordonnées sont dans les limites
-    if ((new_x < xmin)|| (new_x > xmax) || (new_y < ymin)|| (new_y > ymax) || drones[fixed_drone_id-1].z < 0) {
-        printf("Error: Destination en dehors de la zone!.\n");
-        return ; 
-    }
-    // Déplacer le drone à la nouvelle position
-    if(move(fixed_drone_id - 1, new_x, new_y, drones[fixed_drone_id - 1].z)){
-        optimizeDronePositions(fixed_drone_id - 1);
-    }
-
-}
-
-float* speed(int id, float vx, float vy, float vz , float t){
-    //Verifier l ID
-    
-    if ((id < 0) || (id >= drone_count) || (!drones[id-1].is_active)) {
-        printf("Error: Invalid drone ID or drone is not active.\n");
-        return NULL; // Return NULL to indicate an error
-    }
-
-    //Recuperer le drone par son id
-    Drone *d = &drones[id-1];
-    int x0, y0, z0;
-
-    x0 = d->x ;
-    y0 = d->y;
-    z0 = d->z;
-
-    // Tester si la vitesse deppaser la vitesse maximal
-    if (sqrt(vx*vx + vy*vy + vz*vz) > VMAX){
-        //Au lieu de laisser la vitesse deppasser la VMAX on l'associe
-        float facteur = VMAX / sqrt(vx*vx + vy*vy + vz*vz);
-        vx *= facteur;
-        vy *= facteur;
-        vz *= facteur;
-    }
-
-    //Mettre à jour la position du drone selon la vitesse et le temps
-    float new_x = vx * t + d->x;
-    float new_y= vy * t + d->y;
-    float new_z = vz * t + d->z;
-
-    d->x = new_x;
-    d->y = new_y;
-    d->z = new_z;
-
-    d->vx += vx;
-    d->vy += vy;
-    d->vz += vz;
-
-    // Allocate memory to store the new coordinates
-    float* newco = (float*)malloc(3 * sizeof(float));
-    if (newco == NULL) {
-        printf("Error: Memory allocation failed.\n");
-        return NULL; // Return NULL if memory allocation fails
-    }
-
-    // Set the new coordinates
-    newco[0] = d->x;
-    newco[1] = d->y;
-    newco[2] = d->z;
-
-    //Il faut Vérifier si les coordonnées sont dans les limites
-    
-    optimizeDronePositions(id-1);
-    detect_neighbors();
-
-    return newco;
-}
-
-// === Fonctions de gestion des voisins ===
-void detect_neighbors()
-{
-    for (int i = 0; i < drone_count; i++)
-    {
-        drones[i].neighbor_count = 0;
-        for (int j = 0; j < drone_count; j++)
-        {
-            if (i != j && drones[j].is_active)
-            {
-                float dx = drones[i].x - drones[j].x;
-                float dy = drones[i].y - drones[j].y;
-                float dz = drones[i].z - drones[j].z;
-                float distance = sqrt(dx * dx + dy * dy + dz * dz);
-
-                if (distance <= drones[i].communication_range)
-                {
-                    if (drones[i].neighbor_count < MAX_NEIGHBORS)
-                    {
-                        drones[i].neighbors[drones[i].neighbor_count] = drones[j].id;
-                        drones[i].neighbor_count++;
-                    }
-                }
-            }
+            printf("Le drone %d a été détruit.\n", f->drones[i].id);
+            f->drones[i].active = 0; // Marquer le drone comme inactif
+            // Vous pouvez ajouter des ajustements spécifiques ici, par exemple,
+            // redistribuer les tâches des drones voisins.
         }
     }
 }
 
-int within_range(int drone_id, int target_id)
+// Calcul des coordonnées de tuile à partir de la latitude, de la longitude et du niveau de zoom
+void latlon_to_tile(double lat, double lon, int zoom, int *x_tile, int *y_tile)
 {
-    Drone *d = &drones[drone_id];
-    for (int i = 0; i < d->neighbor_count; i++)
-    {
-        if (d->neighbors[i] == target_id)
-        {
-            return 1;
-        }
-    }
-    return 0;
+    int n = 1 << zoom;
+    *x_tile = (int)((lon + 180.0) / 360.0 * n);
+    *y_tile = (int)((1.0 - log(tan(lat * M_PI / 180.0) + 1.0 / cos(lat * M_PI / 180.0)) / M_PI) / 2.0 * n);
 }
 
-// === Fonctions de gestion des destructions ===
-
-void destruct_drone(int drone_id, float xmin, float ymin, float xmax, float ymax, float comm_range, float cam_res)
+// Télécharger une tuile d'image
+int download_tile(int x_tile, int y_tile, int zoom, const char *filename)
 {
-    if (drone_id < 1 || drone_id > drone_count)
-    {
-        printf("Erreur: ID de drone invalide.\n");
-        return;
-    }
-
-    int index = drone_id - 1;
-    if (!drones[index].is_active)
-    {
-        printf("Le drone %d est déjà détruit.\n", drone_id);
-        return;
-    }
-
-    drones[index].is_active = 0;
-    printf("Drone %d a été détruit.\n", drones[index].id);
-
-    update_neighbors_for_destroyed_drones(drone_id);
-    remove_drone(index);
-    adjust_drones_after_destruction(xmin, ymin, xmax, ymax, comm_range, cam_res);
+    char url[256];
+    sprintf(url, "https://tile.openstreetmap.org/%d/%d/%d.png", zoom, x_tile, y_tile);
+    char command[512];
+    sprintf(command, "curl -s -o %s %s", filename, url);
+    return system(command);
 }
 
-void adjust_drones_after_destruction(float xmin, float ymin, float xmax, float ymax, float comm_range, float cam_res)
+// Capture d'une tuile par le drone
+void drone_capture_tile(Drone *d)
 {
-    int active_drone_count = 0;
-    for (int i = 0; i < drone_count; i++)
+    int x_tile, y_tile;
+    double lat = d->y; // Latitude
+    double lon = d->x; // Longitude
+    latlon_to_tile(lat, lon, d->zoom_level, &x_tile, &y_tile);
+
+    printf("Drone %d (%.6f, %.6f) va capturer la tuile (%d, %d) au zoom %d\n", d->id, lon, lat, x_tile, y_tile, d->zoom_level);
+
+    char filename[128];
+    sprintf(filename, "../Captures/drone_%d_tile.png", d->id);
+    if (download_tile(x_tile, y_tile, d->zoom_level, filename) != 0)
     {
-        if (drones[i].is_active)
-        {
-            active_drone_count++;
-        }
+        printf("Erreur lors du téléchargement de la tuile pour le drone %d\n", d->id);
+        return; // Quitte si le téléchargement échoue
     }
 
-    if (active_drone_count == 0)
+    // Charger les données d'image
+    d->image_data = stbi_load(filename, &d->img_width, &d->img_height, &d->img_channels, 0);
+    if (d->image_data)
     {
-        printf("Tous les drones ont été détruits.\n");
-        return;
-    }
-
-    spread_drones(active_drone_count, xmin, ymin, xmax, ymax, comm_range, cam_res);
-}
-
-void update_neighbors_for_destroyed_drones(int destroyed_drone_id)
-{
-    if (destroyed_drone_id < 1 || destroyed_drone_id > drone_count)
-    {
-        printf("Erreur: ID de drone invalide.\n");
-        return;
-    }
-
-    Drone *destroyed_drone = &drones[destroyed_drone_id - 1];
-    if (!destroyed_drone->is_active)
-    {
-        for (int i = 0; i < drone_count; i++)
-        {
-            Drone *d = &drones[i];
-            if (d->is_active)
-            {
-                for (int j = 0; j < d->neighbor_count; j++)
-                {
-                    if (d->neighbors[j] == destroyed_drone_id)
-                    {
-                        printf("Drone %d: suppression du voisin %d\n", d->id, destroyed_drone_id);
-                        d->neighbors[j] = d->neighbors[d->neighbor_count - 1];
-                        d->neighbor_count--;
-                        break;
-                    }
-                }
-            }
-        }
+        printf("Drone %d a capturé la tuile (%d, %d) au zoom %d\n", d->id, x_tile, y_tile, d->zoom_level);
     }
     else
     {
-        printf("Le drone %d est toujours actif, pas besoin de mise à jour.\n", destroyed_drone_id);
+        printf("Drone %d n'a pas pu capturer la tuile\n", d->id);
     }
 }
 
-// === Fonctions de gestion des collisions ===
-
-void avoid_collisions()
+// Combiner les images des drones en une image composite
+void combine_drone_images(Fleet *f, const char *output_filename)
 {
-    for (int i = 0; i < drone_count; i++)
+    if (f->num_drones == 0)
+        return;
+
+    int grid_size = (int)sqrt(f->num_drones); // Créer une grille pour les drones
+    int total_width = f->drones[0].img_width * grid_size;
+    int total_height = f->drones[0].img_height * grid_size;
+    int channels = f->drones[0].img_channels;
+
+    unsigned char *composite_image = (unsigned char *)malloc(total_width * total_height * channels);
+    memset(composite_image, 0, total_width * total_height * channels);
+
+    for (int i = 0; i < f->num_drones; i++)
     {
-        for (int j = i + 1; j < drone_count; j++)
-        {
-            if (drones[i].is_active && drones[j].is_active)
+        if (f->drones[i].active == 1)
+        { // Vérifier si le drone est actif
+            int row = i / grid_size;
+            int col = i % grid_size;
+            for (int y = 0; y < f->drones[i].img_height; y++)
             {
-                float distance = sqrt(pow(drones[i].x - drones[j].x, 2) +
-                                      pow(drones[i].y - drones[j].y, 2) +
-                                      pow(drones[i].z - drones[j].z, 2));
-
-                if (distance < 0.5)
+                for (int x = 0; x < f->drones[i].img_width; x++)
                 {
-                    float dx = drones[i].x - drones[j].x;
-                    float dy = drones[i].y - drones[j].y;
-                    float dz = drones[i].z - drones[j].z;
-
-                    float magnitude = sqrt(dx * dx + dy * dy + dz * dz);
-                    dx /= magnitude;
-                    dy /= magnitude;
-                    dz /= magnitude;
-
-                    drones[i].x += dx * 0.5;
-                    drones[i].y += dy * 0.5;
-                    drones[i].z += dz * 0.5;
-
-                    drones[j].x -= dx * 0.5;
-                    drones[j].y -= dy * 0.5;
-                    drones[j].z -= dz * 0.5;
-
-                    printf("Collision évitée entre Drone %d et Drone %d.\n", drones[i].id, drones[j].id);
+                    int src_idx = (y * f->drones[i].img_width + x) * channels;
+                    int dest_x = col * f->drones[i].img_width + x;
+                    int dest_y = row * f->drones[i].img_height + y;
+                    int dest_idx = (dest_y * total_width + dest_x) * channels;
+                    memcpy(&composite_image[dest_idx], &f->drones[i].image_data[src_idx], channels);
                 }
             }
         }
     }
+
+    // Sauvegarde de l'image composite dans le répertoire Capture
+    stbi_write_png(output_filename, total_width, total_height, channels, composite_image, total_width * channels);
+    free(composite_image);
+    printf("Image composite sauvegardée sous %s\n", output_filename);
 }
 
-// === Fonctions de gestion des drones ===
-
-void spread_drones(int num_drones, float xmin, float ymin, float xmax, float ymax, float comm_range, float cam_res)
+// Initialiser la région autour des coordonnées fournies
+void init_region(Fleet *f, Area *area, int num_drones_side, int zoom_level, float center_lat, float center_lon)
 {
-    float total_area = (xmax - xmin) * (ymax - ymin);
-    float c = sqrt(total_area / num_drones);
-    float h = c / (2 * tan(alpha));
-    float grid_size = c;
-    int drones_per_row = (int)ceil((xmax - xmin) / grid_size);
-    int drones_per_column = (int)ceil((ymax - ymin) / grid_size);
+    double tile_size = 360.0 / (1 << zoom_level); // Taille d'une tuile en degrés
 
-    int drone_id = 0;
-    for (int i = 0; i < drones_per_row && drone_id < num_drones; i++)
+    area->min_lat = center_lat - (num_drones_side / 2.0) * tile_size;
+    area->max_lat = center_lat + (num_drones_side / 2.0) * tile_size;
+    area->min_lon = center_lon - (num_drones_side / 2.0) * tile_size;
+    area->max_lon = center_lon + (num_drones_side / 2.0) * tile_size;
+
+    // Initialiser les drones avec la bonne position
+    for (int i = 0; i < num_drones_side; i++)
     {
-        for (int j = 0; j < drones_per_column && drone_id < num_drones; j++)
+        for (int j = 0; j < num_drones_side; j++)
         {
-            float x = xmin + i * grid_size + grid_size / 2;
-            float y = ymin + j * grid_size + grid_size / 2;
-            float z = h;
-
-            drones[drone_id].id = drone_id + 1;
-            drones[drone_id].x = x;
-            drones[drone_id].y = y;
-            drones[drone_id].z = z;
-            drones[drone_id].coverage = c * c;
-            drones[drone_id].vx = 0;
-            drones[drone_id].vy = 0;
-            drones[drone_id].vz = 0;
-            drones[drone_id].communication_range = comm_range;
-            drones[drone_id].camera_resolution = cam_res;
-            drones[drone_id].is_active = 1;
-            drone_id++;
+            float x = area->min_lon + j * tile_size; // Longitude
+            float y = area->max_lat - i * tile_size; // Latitude
+            Drone d;
+            init_drone(&d, i * num_drones_side + j + 1, x, y, 1000.0, 0.0, zoom_level);
+            add_drone(f, d);
         }
     }
-    drone_count = drone_id;
+
+    printf("Zone initiale : min_lat = %.6f, max_lat = %.6f, min_lon = %.6f, max_lon = %.6f\n", area->min_lat, area->max_lat, area->min_lon, area->max_lon);
 }
 
-void remove_drone(int index)
+// Surveillance continue par les drones et capture d'images
+void capturer(Fleet *f, const char *filename)
 {
-    if (index < 0 || index >= drone_count)
+    for (int i = 0; i < f->num_drones; i++)
     {
-        printf("Index de drone invalide pour suppression.\n");
-        return;
+        if (f->drones[i].destroyed == 0)
+        { // Ne capture pas si le drone est détruit
+            drone_capture_tile(&f->drones[i]);
+        }
     }
-
-    for (int i = index; i < drone_count - 1; i++)
-    {
-        drones[i] = drones[i + 1];
-    }
-    drone_count--;
-    printf("Drone à l'index %d supprimé. Nouveau nombre de drones: %d\n", index + 1, drone_count);
+    combine_drone_images(f, filename);
 }

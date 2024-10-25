@@ -1,4 +1,14 @@
-INIT 4 0 0 100 100 50 5 // Initialise 4 drones
-    CAPTURE 14          // Drones capturent les images
-    DESTROY 2           // Détruit le drone 2
-    CAPTURE 14
+#Nom de la ville
+city = Paris
+
+#Nombre de drones
+    num_drones = 10
+
+#Plage de communication(en mètres)
+    comm_range = 100.0
+
+#Résolution de la caméra(en mégapixels)
+    cam_res = 1.5
+
+#Coordonnées GPS du centre de la région(Latitude et Longitude de Paris)
+    latitude = 48.8566 longitude = 2.3522

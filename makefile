@@ -11,7 +11,6 @@ mes_fonctions.o: mes_fonctions.c mes_structures.h mes_signatures.h
 
 run: main
 	chcp 65001 > nul
-	cls
 	./main.exe
 clean:
 	del /Q *.o main.exe

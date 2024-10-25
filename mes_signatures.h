@@ -1,36 +1,17 @@
 #include "mes_structures.h"
-#include<stdbool.h>
 
 #ifndef MES_SIGNATURES_H
 #define MES_SIGNATURES_H
 
-// Fonction d'affichage des informations des drones
-void print_drone_infos();
-void print_neighbors();
-void print_move_action(int drone_id, float new_x, float new_y);
-void print_speed_action(int drone_id, float vx, float vy, float vz,float delta_t);
-
-// Fonctions de gestion des déplacements
-void adjustDronesPosition(int fixed_drone_id, float new_x, float new_y, float xmin, float ymin, float xmax, float ymax); // Réajuste la position des drones après le déplacement
-float move(int id, float x, float y, float z);
-float* speed(int id, float vx, float vy, float vz , float t);
-
-// Fonctions de gestion des voisins (détection et mise à jour)
-void detect_neighbors();
-bool isCollision(float x, float y, float z, int id);
-int within_range(int drone_id, int target_id);
-
-// Fonctions de gestion des destructions
-void destruct_drone(int drone_id, float xmin, float ymin, float xmax, float ymax, float comm_range, float cam_res);
-void adjust_drones_after_destruction(float xmin, float ymin, float xmax, float ymax, float comm_range, float cam_res);
-void update_neighbors_for_destroyed_drones(int destroyed_drone_id);
-
-// Fonctions de gestion des collisions
-void avoid_collisions();
-
-// Fonctions de gestion des drones (initialisation et suppression)
-void spread_drones(int num_drones, float xmin, float ymin, float xmax, float ymax, float comm_range, float cam_res);
-void optimizeDronePositions(int id);
-void remove_drone(int index);
+void create_directory(const char *dir);
+void init_drone(Drone *d, int id, float x, float y, float z, float v, int zoom_level);
+void add_drone(Fleet *f, Drone d);
+void adjust_drones_after_destruction(Fleet *f);
+void latlon_to_tile(double lat, double lon, int zoom, int *x_tile, int *y_tile);
+int download_tile(int x_tile, int y_tile, int zoom, const char *filename);
+void drone_capture_tile(Drone *d);
+void combine_drone_images(Fleet *f, const char *output_filename);
+void init_region(Fleet *f, Area *area, int num_drones_side, int zoom_level, float center_lat, float center_lon);
+void capturer(Fleet *f, const char *filename);
 
 #endif

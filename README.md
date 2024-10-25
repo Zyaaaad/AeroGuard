@@ -1,5 +1,9 @@
 # AeroGuard
 
+# Si le makefile ne marche pas
+
+exécuter le fichier new.c qui contient tout le code
+
 # makefile WINDOWS
 
 all: main run

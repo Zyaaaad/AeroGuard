@@ -1,11 +1,12 @@
 {
-    "files.associations": {
-        "mes_structures.h": "c",
-        "Daher_test1.C": "cpp",
-        "string.h": "c",
-        "stb_image_write.h": "c",
-        "stdio.h": "c",
-        "math.h": "c",
-        "*.txt": "cpp"
-    }
+  "files.associations": {
+    "mes_structures.h": "c",
+    "Daher_test1.C": "cpp",
+    "string.h": "c",
+    "stb_image_write.h": "c",
+    "stdio.h": "c",
+    "math.h": "c",
+    "*.txt": "cpp",
+    "stb_image.h": "c"
+  }
 }
